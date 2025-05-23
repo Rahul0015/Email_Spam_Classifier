@@ -14,29 +14,34 @@ st.set_page_config(
     initial_sidebar_state="auto"
 )
 
-# --- NLTK Data Download Check & Download ---
+# --- NLTK Data Download ---
 # This block runs at the very start of the script when Streamlit loads the app.
 # @st.cache_resource ensures it only executes once per deployment/session.
 @st.cache_resource
 def download_nltk_data_if_needed():
+    st.warning("Attempting to ensure NLTK data (stopwords, punkt) is available...")
+    try:
+        # First, try to download them. This is the most direct approach for deployment.
+        nltk.download('stopwords', quiet=True) # Use quiet=True to reduce log verbosity
+        nltk.download('punkt', quiet=True)
+        st.success("NLTK data (stopwords, punkt) downloaded or already present successfully!")
+    except Exception as e:
+        # Catch any general exception during download. This is more robust.
+        st.error(f"Failed to download NLTK data: {e}. Please check logs for details.")
+        st.stop() # Stop the app if crucial data can't be obtained
+
+    # After the download attempt, verify that the data can actually be found.
+    # This catches cases where download might report success but data isn't usable.
     try:
         nltk.data.find('corpora/stopwords')
-        nltk.data.find('tokenizers/punkt') # Also check for 'punkt'
-        st.success("NLTK data (stopwords, punkt) already available.")
-    except nltk.downloader.DownloadError:
-        st.warning("NLTK data not found. Attempting to download 'stopwords' and 'punkt'...")
-        try:
-            nltk.download('stopwords', quiet=True)
-            nltk.download('punkt', quiet=True)
-            st.success("NLTK data (stopwords, punkt) downloaded successfully!")
-        except Exception as e:
-            st.error(f"Failed to download NLTK data: {e}. Please check your internet connection or deployment environment.")
-            st.stop()
-    except Exception as e:
-        st.error(f"An unexpected error occurred during NLTK data check/download: {e}")
+        nltk.data.find('tokenizers/punkt')
+        # If we reach here, data is confirmed to be available.
+    except Exception as e: # Catch any LookupError or other issues
+        st.error(f"NLTK data (stopwords, punkt) is still not found after download attempt. Please check NLTK installation and data paths. Error: {e}")
         st.stop()
 
-# Execute the download check immediately
+
+# Call the download function immediately when the script runs
 download_nltk_data_if_needed()
 
 # --- Text Preprocessing Function ---
