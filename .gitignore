@@ -1,0 +1,35 @@
+---
+
+### `.gitignore`
+
+This file tells Git which files and folders to ignore when you're committing your code to a repository. This keeps your repository clean by not including temporary files, environment-specific files, or large generated files.
+
+Create a file named `.gitignore` in your `email_classifier/` root directory with the following content:
+
+```gitignore
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# IDEs
+.vscode/ # VS Code specific settings (optional, you might want to share some)
+.idea/   # PyCharm specific settings
+
+# OS generated files
+.DS_Store # macOS
+Thumbs.db # Windows
+
+# Generated files
+/models/   # Ignore the entire models directory (since they are generated artifacts)
+/data/     # Ignore the data directory (unless you want to commit small datasets)
+*.csv      # Ignore all CSV files (if you don't want to commit data)
+*.log
