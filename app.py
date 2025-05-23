@@ -37,18 +37,37 @@ stemmer = PorterStemmer()
 stop_words = set(stopwords.words('english'))
 
 def preprocess_text(text):
-    """
-    Preprocesses the input text by converting to lowercase, removing URLs,
-    numbers, punctuation, applying stemming, and removing stopwords.
-    """
-    text = text.lower()  # Convert to lowercase
-    text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE) # Remove URLs
-    text = re.sub(r'\d+', '', text) # Remove numbers
-    text = text.translate(str.maketrans('', '', string.punctuation)) # Remove punctuation
+    # ... (rest of your preprocess_text function) ...
+    text = text.lower()
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'\d+', '', text)
+    text = text.translate(str.maketrans('', '', string.punctuation))
     tokens = text.split()
-    tokens = [stemmer.stem(word) for word in tokens if word not in stop_words] # Stemming and stop word removal
+    tokens = [stemmer.stem(word) for word in tokens if word not in stop_words]
     return ' '.join(tokens)
 
+
+# --- Load Models and Vectorizers ---
+@st.cache_resource # Cache the models and vectorizers to avoid reloading on every rerun
+def load_all_resources():
+    """Loads all trained models and TF-IDF vectorizers."""
+    try:
+        # Classifier resources
+        classifier_model = joblib.load('models/multinomial_naive_bayes_model.pkl')
+        classifier_vectorizer = joblib.load('models/tfidf_vectorizer.pkl')
+
+        # Clustering resources
+        cluster_model = joblib.load('models/kmeans_clusterer.pkl')
+        cluster_vectorizer = joblib.load('models/tfidf_vectorizer_for_cluster.pkl')
+
+        return classifier_model, classifier_vectorizer, cluster_model, cluster_vectorizer
+    except FileNotFoundError as e:
+        st.error(f"Error: One or more model files not found. Please ensure all required .pkl files are in the 'models/' directory. "
+                 f"Have you run 'train_classifier.py' and 'train_clusterer.py'? Detailed error: {e}")
+        st.stop() # Stops the app execution cleanly
+    except Exception as e:
+        st.error(f"An unexpected error occurred while loading resources: {e}")
+        st.stop()
 # --- Classification Function ---
 def classify_email(email_content):
     """
