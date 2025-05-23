@@ -2,42 +2,49 @@ import streamlit as st
 import joblib
 import re
 import string
-import nltk
+import nltk # Ensure nltk is imported
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
 # --- Configuration ---
-# Set page configuration for better appearance
 st.set_page_config(
-    page_title="Email Spam Classifier",
+    page_title="Email Analysis System",
     page_icon="📧",
     layout="centered",
     initial_sidebar_state="auto"
 )
 
-# --- Load Model and Vectorizer ---
-@st.cache_resource # Cache the model and vectorizer to avoid reloading on every rerun
-def load_resources():
-    """Loads the trained model and TF-IDF vectorizer."""
+# --- NLTK Data Download Check & Download ---
+# This block runs at the very start of the script.
+# @st.cache_resource ensures it only executes once across reruns on Streamlit Cloud.
+@st.cache_resource
+def check_and_download_nltk_data():
     try:
-        model = joblib.load('models/multinomial_naive_bayes_model.pkl')
-        vectorizer = joblib.load('models/tfidf_vectorizer.pkl')
-        return model, vectorizer
-    except FileNotFoundError:
-        st.error("Error: Model files not found. Please ensure 'multinomial_naive_bayes_model.pkl' and 'tfidf_vectorizer.pkl' are in the 'models/' directory.")
-        st.stop() # Stop the app execution if files are missing
+        nltk.data.find('corpora/stopwords')
+        nltk.data.find('tokenizers/punkt') # Also check for 'punkt'
+        st.success("NLTK data (stopwords, punkt) already available.")
+    except nltk.downloader.DownloadError:
+        st.warning("NLTK data not found. Downloading 'stopwords' and 'punkt'...")
+        nltk.download('stopwords')
+        nltk.download('punkt')
+        st.success("NLTK data (stopwords, punkt) downloaded successfully!")
     except Exception as e:
-        st.error(f"An error occurred while loading resources: {e}")
-        st.stop()
+        st.error(f"An error occurred during NLTK data check/download: {e}")
+        st.stop() # Stop if essential data can't be obtained
 
-model, vectorizer = load_resources()
+# Execute the download check immediately
+check_and_download_nltk_data()
 
-# --- Text Preprocessing Function (consistent with train_model.py) ---
+# --- Text Preprocessing Function (consistent across all scripts) ---
+# Now, stop_words can be safely defined as the NLTK data is guaranteed to be present.
 stemmer = PorterStemmer()
-stop_words = set(stopwords.words('english'))
+stop_words = set(stopwords.words('english')) # This line will now work
 
 def preprocess_text(text):
-    # ... (rest of your preprocess_text function) ...
+    """
+    Preprocesses the input text by converting to lowercase, removing URLs,
+    numbers, punctuation, applying stemming, and removing stopwords.
+    """
     text = text.lower()
     text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
     text = re.sub(r'\d+', '', text)
@@ -46,11 +53,11 @@ def preprocess_text(text):
     tokens = [stemmer.stem(word) for word in tokens if word not in stop_words]
     return ' '.join(tokens)
 
-
 # --- Load Models and Vectorizers ---
-@st.cache_resource # Cache the models and vectorizers to avoid reloading on every rerun
+# (Keep this function as is)
+@st.cache_resource
 def load_all_resources():
-    """Loads all trained models and TF-IDF vectorizers."""
+    # ... (rest of your load_all_resources function) ...
     try:
         # Classifier resources
         classifier_model = joblib.load('models/multinomial_naive_bayes_model.pkl')
@@ -64,7 +71,7 @@ def load_all_resources():
     except FileNotFoundError as e:
         st.error(f"Error: One or more model files not found. Please ensure all required .pkl files are in the 'models/' directory. "
                  f"Have you run 'train_classifier.py' and 'train_clusterer.py'? Detailed error: {e}")
-        st.stop() # Stops the app execution cleanly
+        st.stop()
     except Exception as e:
         st.error(f"An unexpected error occurred while loading resources: {e}")
         st.stop()
